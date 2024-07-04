@@ -12,13 +12,13 @@
         color: #333;
         background-color: #f4f4f4;
         margin: 0;
-        padding: 20px;
+        padding: 10px;
       }
       .container {
         max-width: 1200px;
         margin: 0 auto;
         background-color: #fff;
-        padding: 20px;
+        padding: 15px;
         border-radius: 8px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       }
@@ -27,30 +27,32 @@
         color: #2c3e50;
       }
       .grand-total {
-        font-size: 24px;
+        font-size: 20px;
         font-weight: bold;
         color: #e74c3c;
         text-align: center;
-        margin: 20px 0;
+        margin: 15px 0;
         padding: 10px;
         background-color: #ecf0f1;
         border-radius: 4px;
       }
       .slider-container {
-        margin-bottom: 20px;
+        margin-bottom: 15px;
       }
       #optimismSlider {
         width: 100%;
       }
       .chart-container {
         display: flex;
-        justify-content: space-between;
-        margin-bottom: 30px;
+        flex-direction: column;
+        gap: 20px;
+        margin-bottom: 20px;
       }
       .chart {
-        width: 48%;
+        width: 100%;
+        height: 300px;
         background-color: #fff;
-        padding: 15px;
+        padding: 10px;
         border-radius: 8px;
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
       }
@@ -58,11 +60,12 @@
         width: 100%;
         border-collapse: collapse;
         margin-bottom: 20px;
+        font-size: 14px;
       }
       th,
       td {
         border: 1px solid #ddd;
-        padding: 12px;
+        padding: 8px;
         text-align: left;
       }
       th {
@@ -77,6 +80,43 @@
         padding: 15px;
         border-radius: 8px;
         margin-top: 20px;
+        font-size: 14px;
+      }
+      .links {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f0f0f0;
+        border-radius: 8px;
+      }
+      .links a {
+        display: block;
+        margin-bottom: 10px;
+        color: #3498db;
+        text-decoration: none;
+      }
+      .links a:hover {
+        text-decoration: underline;
+      }
+      @media (min-width: 768px) {
+        .chart-container {
+          flex-direction: row;
+        }
+        .chart {
+          width: 48%;
+        }
+        body {
+          padding: 20px;
+        }
+        .container {
+          padding: 20px;
+        }
+        .grand-total {
+          font-size: 24px;
+        }
+        table,
+        .analysis {
+          font-size: 16px;
+        }
       }
     </style>
   </head>
@@ -93,40 +133,52 @@
 
       <div class="chart-container">
         <div class="chart">
-          <h2>Cost Breakdown</h2>
           <canvas id="costBreakdownChart"></canvas>
         </div>
         <div class="chart">
-          <h2>Cost Categories</h2>
           <canvas id="costCategoriesChart"></canvas>
         </div>
       </div>
 
       <h2>Detailed Cost Breakdown</h2>
-      <table id="costTable">
-        <thead>
-          <tr>
-            <th>Category</th>
-            <th>Item</th>
-            <th>Min Cost</th>
-            <th>Max Cost</th>
-            <th>Current Est.</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-        <tfoot>
-          <tr>
-            <td colspan="2"><strong>Total</strong></td>
-            <td id="totalMin"></td>
-            <td id="totalMax"></td>
-            <td id="totalCurrent"></td>
-          </tr>
-        </tfoot>
-      </table>
+      <div style="overflow-x: auto">
+        <table id="costTable">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Item</th>
+              <th>Min Cost</th>
+              <th>Max Cost</th>
+              <th>Current Est.</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2"><strong>Total</strong></td>
+              <td id="totalMin"></td>
+              <td id="totalMax"></td>
+              <td id="totalCurrent"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
 
       <div class="analysis">
         <h2>Analysis</h2>
         <p id="analysis"></p>
+      </div>
+
+      <div class="links">
+        <h2>Property and Container Home Links</h2>
+        <a
+          href="https://www.zillow.com/homedetails/701-Bull-Run-Rd-2-Weldon-CA-93283/2052960889_zpid/"
+          target="_blank"
+          >View Property Listing on Zillow</a
+        >
+        <a href="https://a.co/d/00KOTj1R" target="_blank"
+          >View Container Home on Amazon</a
+        >
       </div>
     </div>
 
@@ -155,15 +207,15 @@
         },
         {
           category: "Site Preparation",
-          item: "Container home",
-          min: 17000,
-          max: 24000,
-        },
-        {
-          category: "Site Preparation",
           item: "40x20 concrete slab",
           min: 4800,
           max: 8000,
+        },
+        {
+          category: "Site Preparation",
+          item: "Container home",
+          min: 17500,
+          max: 26000,
         },
         { category: "Permits", item: "Building permit", min: 1500, max: 2000 },
         { category: "Permits", item: "Plumbing permit", min: 300, max: 500 },
@@ -271,6 +323,8 @@
             ],
           },
           options: {
+            responsive: true,
+            maintainAspectRatio: false,
             scales: {
               y: {
                 beginAtZero: true,
@@ -321,6 +375,7 @@
           },
           options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
               legend: {
                 position: "right",
@@ -337,6 +392,11 @@
                         style: "currency",
                         currency: "USD",
                       }).format(context.parsed);
+                      label += ` (${(
+                        (context.parsed /
+                          context.dataset.data.reduce((a, b) => a + b)) *
+                        100
+                      ).toFixed(2)}%)`;
                     }
                     return label;
                   },
