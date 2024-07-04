@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weldon Property Cost Analysis</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1,
+      h2 {
+        color: #2c3e50;
+      }
+      .grand-total {
+        font-size: 24px;
+        font-weight: bold;
+        color: #e74c3c;
+        text-align: center;
+        margin: 20px 0;
+        padding: 10px;
+        background-color: #ecf0f1;
+        border-radius: 4px;
+      }
+      .slider-container {
+        margin-bottom: 20px;
+      }
+      #optimismSlider {
+        width: 100%;
+      }
+      .chart-container {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+      }
+      .chart {
+        width: 48%;
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+      }
+      tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+      .analysis {
+        background-color: #e8f4fd;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Weldon Property Cost Analysis</h1>
+
+      <div class="grand-total" id="grandTotal"></div>
+
+      <div class="slider-container">
+        <label for="optimismSlider">Optimism Level:</label>
+        <input type="range" id="optimismSlider" min="0" max="100" value="50" />
+      </div>
+
+      <div class="chart-container">
+        <div class="chart">
+          <h2>Cost Breakdown</h2>
+          <canvas id="costBreakdownChart"></canvas>
+        </div>
+        <div class="chart">
+          <h2>Cost Categories</h2>
+          <canvas id="costCategoriesChart"></canvas>
+        </div>
+      </div>
+
+      <h2>Detailed Cost Breakdown</h2>
+      <table id="costTable">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Item</th>
+            <th>Min Cost</th>
+            <th>Max Cost</th>
+            <th>Current Est.</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2"><strong>Total</strong></td>
+            <td id="totalMin"></td>
+            <td id="totalMax"></td>
+            <td id="totalCurrent"></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div class="analysis">
+        <h2>Analysis</h2>
+        <p id="analysis"></p>
+      </div>
+    </div>
+
+    <script>
+      const costs = [
+        {
+          category: "Purchasing",
+          item: "Property cost",
+          min: 18500,
+          max: 18500,
+        },
+        { category: "Purchasing", item: "Escrow fees", min: 500, max: 1000 },
+        { category: "Purchasing", item: "Recording fee", min: 100, max: 200 },
+        { category: "Purchasing", item: "Property tax", min: 150, max: 300 },
+        {
+          category: "Site Preparation",
+          item: "Clearing and grading",
+          min: 1000,
+          max: 2000,
+        },
+        {
+          category: "Site Preparation",
+          item: "Soil tests",
+          min: 300,
+          max: 500,
+        },
+        {
+          category: "Site Preparation",
+          item: "40x20 concrete slab",
+          min: 4800,
+          max: 8000,
+        },
+        { category: "Permits", item: "Building permit", min: 1500, max: 2000 },
+        { category: "Permits", item: "Plumbing permit", min: 300, max: 500 },
+        { category: "Permits", item: "Well permit", min: 500, max: 700 },
+        { category: "Permits", item: "Septic permit", min: 900, max: 1300 },
+        { category: "Permits", item: "Electrical permit", min: 500, max: 700 },
+        { category: "Insurance", item: "Title insurance", min: 500, max: 1000 },
+        {
+          category: "Insurance",
+          item: "Liability insurance",
+          min: 1000,
+          max: 2000,
+        },
+        {
+          category: "Utilities",
+          item: "Solar system (20kw 30kwh)",
+          min: 20000,
+          max: 32500,
+        },
+        { category: "Utilities", item: "Electrical", min: 2000, max: 3000 },
+        { category: "Utilities", item: "Well", min: 16000, max: 28000 },
+        { category: "Utilities", item: "Septic", min: 6000, max: 13000 },
+      ];
+
+      const slider = document.getElementById("optimismSlider");
+      const costTable = document
+        .getElementById("costTable")
+        .getElementsByTagName("tbody")[0];
+      const totalMin = document.getElementById("totalMin");
+      const totalMax = document.getElementById("totalMax");
+      const totalCurrent = document.getElementById("totalCurrent");
+      const analysisText = document.getElementById("analysis");
+      const grandTotalElement = document.getElementById("grandTotal");
+
+      let costBreakdownChart, costCategoriesChart;
+
+      function updateCosts() {
+        const optimism = slider.value / 100;
+        let totalMinCost = 0,
+          totalMaxCost = 0,
+          totalCurrentCost = 0;
+        const categoryTotals = {};
+
+        costTable.innerHTML = "";
+        costs.forEach((cost) => {
+          const currentCost = cost.min + (1 - optimism) * (cost.max - cost.min);
+          totalMinCost += cost.min;
+          totalMaxCost += cost.max;
+          totalCurrentCost += currentCost;
+
+          if (!categoryTotals[cost.category]) {
+            categoryTotals[cost.category] = 0;
+          }
+          categoryTotals[cost.category] += currentCost;
+
+          const row = costTable.insertRow();
+          row.innerHTML = `
+                    <td>${cost.category}</td>
+                    <td>${cost.item}</td>
+                    <td>$${cost.min.toFixed(2)}</td>
+                    <td>$${cost.max.toFixed(2)}</td>
+                    <td>$${currentCost.toFixed(2)}</td>
+                `;
+        });
+
+        totalMin.textContent = `$${totalMinCost.toFixed(2)}`;
+        totalMax.textContent = `$${totalMaxCost.toFixed(2)}`;
+        totalCurrent.textContent = `$${totalCurrentCost.toFixed(2)}`;
+        grandTotalElement.textContent = `Grand Total: $${totalCurrentCost.toFixed(
+          2
+        )}`;
+
+        updateCharts(categoryTotals, totalCurrentCost);
+        updateAnalysis(
+          totalMinCost,
+          totalMaxCost,
+          totalCurrentCost,
+          categoryTotals
+        );
+      }
+
+      function updateCharts(categoryTotals, totalCost) {
+        const ctx1 = document
+          .getElementById("costBreakdownChart")
+          .getContext("2d");
+        const ctx2 = document
+          .getElementById("costCategoriesChart")
+          .getContext("2d");
+
+        if (costBreakdownChart) costBreakdownChart.destroy();
+        if (costCategoriesChart) costCategoriesChart.destroy();
+
+        costBreakdownChart = new Chart(ctx1, {
+          type: "bar",
+          data: {
+            labels: Object.keys(categoryTotals),
+            datasets: [
+              {
+                label: "Cost",
+                data: Object.values(categoryTotals),
+                backgroundColor: "rgba(54, 162, 235, 0.6)",
+                borderColor: "rgba(54, 162, 235, 1)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "Cost ($)",
+                },
+              },
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    let label = context.dataset.label || "";
+                    if (label) {
+                      label += ": ";
+                    }
+                    if (context.parsed.y !== null) {
+                      label += new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                      }).format(context.parsed.y);
+                    }
+                    return label;
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        costCategoriesChart = new Chart(ctx2, {
+          type: "pie",
+          data: {
+            labels: Object.keys(categoryTotals),
+            datasets: [
+              {
+                data: Object.values(categoryTotals),
+                backgroundColor: [
+                  "rgba(255, 99, 132, 0.6)",
+                  "rgba(54, 162, 235, 0.6)",
+                  "rgba(255, 206, 86, 0.6)",
+                  "rgba(75, 192, 192, 0.6)",
+                  "rgba(153, 102, 255, 0.6)",
+                ],
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: "right",
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    let label = context.label || "";
+                    if (label) {
+                      label += ": ";
+                    }
+                    if (context.parsed !== null) {
+                      label += new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                      }).format(context.parsed);
+                    }
+                    return label;
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function updateAnalysis(minCost, maxCost, currentCost, categoryTotals) {
+        const sortedCategories = Object.entries(categoryTotals).sort(
+          (a, b) => b[1] - a[1]
+        );
+        const highestCategory = sortedCategories[0][0];
+        const highestCost = sortedCategories[0][1];
+        const lowestCategory = sortedCategories[sortedCategories.length - 1][0];
+        const lowestCost = sortedCategories[sortedCategories.length - 1][1];
+
+        const analysis = `
+                Based on the current optimism level, the estimated total cost for purchasing and developing the lot in Weldon, California is $${currentCost.toFixed(
+                  2
+                )}.
+                This falls between the minimum possible cost of $${minCost.toFixed(
+                  2
+                )} and the maximum possible cost of $${maxCost.toFixed(2)}.
+                
+                The most expensive category is ${highestCategory} at $${highestCost.toFixed(
+          2
+        )}, which accounts for ${((highestCost / currentCost) * 100).toFixed(
+          2
+        )}% of the total cost.
+                The least expensive category is ${lowestCategory} at $${lowestCost.toFixed(
+          2
+        )}, which accounts for ${((lowestCost / currentCost) * 100).toFixed(
+          2
+        )}% of the total cost.
+                
+                Adjusting the optimism slider allows you to see how costs might vary based on more optimistic or pessimistic scenarios. This can help in budgeting and planning for potential cost fluctuations.
+            `;
+
+        analysisText.textContent = analysis;
+      }
+
+      slider.addEventListener("input", updateCosts);
+      updateCosts();
+    </script>
+  </body>
+</html>
